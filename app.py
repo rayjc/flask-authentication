@@ -67,7 +67,17 @@ def login_view():
     return render_template('login.html', form=form, submit_button="Login")
 
 
+@app.route('/logout')
+def logout_view():
+    if 'user' in session:
+        del session['user']
+        flash('You have been logged out!', 'success')
+    return redirect(url_for('login_view'))
+
 @app.route('/secret')
 def secret_view():
+    if 'user' not in session:
+        return redirect(url_for('home_view'))
+    
     flash('You made it!', 'success')
     return render_template('base.html')
