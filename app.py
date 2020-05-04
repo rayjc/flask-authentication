@@ -1,6 +1,7 @@
 """Flask app for Feedbacks"""
 from flask import Flask, render_template, request, url_for, redirect, flash, session
 from flask_debugtoolbar import DebugToolbarExtension
+from werkzeug.exceptions import Unauthorized
 
 from forms import AddUserForm, LoginUserForm
 from models import connect_db, db, User
@@ -44,7 +45,7 @@ def register_view():
                                    submit_button="Register")
         # log user in
         session['user'] = new_user.username
-        return redirect(url_for('secret_view'))
+        return redirect(url_for('user_detail_view', username=new_user.username))
 
     return render_template('register.html', form=form, submit_button="Register")
 
@@ -60,7 +61,7 @@ def login_view():
         user = User.authenticate(username, password)
         if user:
             session["user"] = user.username  # log user in
-            return redirect(url_for('secret_view'))
+            return redirect(url_for('user_detail_view', username=username))
         else:
             form.password.errors = ["Username and password do not match!"]
     
@@ -74,6 +75,7 @@ def logout_view():
         flash('You have been logged out!', 'success')
     return redirect(url_for('login_view'))
 
+
 @app.route('/secret')
 def secret_view():
     if 'user' not in session:
@@ -81,3 +83,13 @@ def secret_view():
     
     flash('You made it!', 'success')
     return render_template('base.html')
+
+
+@app.route('/users/<string:username>')
+def user_detail_view(username):
+    if session.get('user') == username:
+        return render_template(
+            'user_detail.html', user=User.query.get_or_404(username)
+        )
+    else:
+        raise Unauthorized("Permission denied.")
