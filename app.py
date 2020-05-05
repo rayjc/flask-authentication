@@ -20,6 +20,17 @@ app.config['SECRET_KEY'] = "test"
 app.debug = True
 tool_bar = DebugToolbarExtension(app)
 
+@app.errorhandler(404)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return (render_template('404.html'), 404)
+
+
+@app.errorhandler(401)
+def page_not_found(e):
+    # note that we set the 404 status explicitly
+    return (render_template('401.html'), 401)
+
 
 @app.route('/')
 def home_view():
