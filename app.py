@@ -23,11 +23,15 @@ tool_bar = DebugToolbarExtension(app)
 
 @app.route('/')
 def home_view():
-    return redirect(url_for('register_view'))
+    return render_template('home.html', users=User.query.order_by(User.username))
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register_view():
+    if 'user' in session:
+        flash(f"{session['user']}, you are already logged in.", "warning")
+        return redirect(url_for('home_view'))
+
     form = AddUserForm()
 
     if form.validate_on_submit():
@@ -52,6 +56,10 @@ def register_view():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login_view():
+    if 'user' in session:
+        flash(f"{session['user']}, you are already logged in.", "warning")
+        return redirect(url_for('home_view'))
+
     form = LoginUserForm()
 
     if form.validate_on_submit():
