@@ -4,6 +4,11 @@
 
 {% block content %}
 <div>
+  <form class="d-inline" action="{{url_for('user_delete_view', username=user.username)}}" method="POST">
+    <button class="btn btn-danger">Remove Account</button>
+  </form>
+</div>
+<div>
     Username: {{user.username}}
 </div>
 <div>
@@ -11,5 +16,19 @@
 </div>
 <div>
     Name: {{user.full_name}}
+</div>
+<div>
+  Your Feedbacks:
+  <ul>
+    {% for feedback in user.feedbacks %}
+    <li>
+      <a href="{{url_for('feedback_edit_view', feedback_id=feedback.id)}}">{{feedback.title}}</a>
+      <form class="d-inline" action="{{url_for('feedback_delete_view', feedback_id=feedback.id)}}" method="POST">
+        <button class="btn btn-outline-secondary btn-sm"><i class="fas fa-trash-alt"></i></button>
+      </form>
+    </li>
+    {% endfor %}
+  </ul>
+  <a class="btn btn-info" href="{{url_for('feedback_add_view', username=user.username)}}">Add Feedback</a>
 </div>
 {% endblock %}

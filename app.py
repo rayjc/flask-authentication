@@ -3,8 +3,8 @@ from flask import Flask, render_template, request, url_for, redirect, flash, ses
 from flask_debugtoolbar import DebugToolbarExtension
 from werkzeug.exceptions import Unauthorized
 
-from forms import AddUserForm, LoginUserForm
-from models import connect_db, db, User
+from forms import AddUserForm, LoginUserForm, AddFeedbackForm
+from models import connect_db, db, User, Feedback
 from sqlalchemy import exc
 
 app = Flask(__name__)
@@ -93,3 +93,90 @@ def user_detail_view(username):
         )
     else:
         raise Unauthorized("Permission denied.")
+
+
+# should consider making this a DELETE request and send from AJAX
+@app.route('/users/<string:username>/delete', methods=['POST'])
+def user_delete_view(username):
+    if session.get('user') == username:
+        try:
+            user = User.query.get_or_404(username)
+            db.session.delete(user)
+            db.session.commit()
+        except exc.SQLAlchemyError:
+            flash(f'Failed to remove {username}', 'danger')
+            return redirect(url_for('user_detail_view', username=username))
+        del session['user']     # log user out
+        flash(f'User {username} removed.', 'success')
+        return redirect(url_for('home_view'))
+    else:
+        flash(f'You do not have permission to delete {username}.', 'danger')
+        return redirect(url_for('login_view'))
+
+
+@app.route('/users/<string:username>/feedback/add', methods=['GET', 'POST'])
+def feedback_add_view(username):
+    if session.get('user') == username:
+        form = AddFeedbackForm()
+        
+        if form.validate_on_submit():
+            title = form.data.get('title')
+            content = form.data.get('content')
+            try:
+                new_feedback = Feedback(title=title, content=content, username=username)
+                db.session.add(new_feedback)
+                db.session.commit()
+            except exc.IntegrityError:
+                flash('Failed to create feedback!', 'danger')
+                return redirect(url_for('feedback_add_view', username=username))
+            flash('Feedback created!', 'success')
+            return redirect(url_for('user_detail_view', username=username))
+        
+        return render_template('feedback_add.html', username=username, form=form, submit_button="Create")
+    
+    else:
+        raise Unauthorized('Permission denied. You can only add feedback under your account.')
+
+
+@app.route('/feedback/<int:feedback_id>/update', methods=['GET', 'POST'])
+def feedback_edit_view(feedback_id):
+    feedback = Feedback.query.get_or_404(feedback_id)
+    username = feedback.username
+
+    if session.get('user') == username:
+        form = AddFeedbackForm(obj=feedback)    # populate form
+        
+        if form.validate_on_submit():
+            feedback.title = form.data.get('title')
+            feedback.content = form.data.get('content')
+            try:
+                db.session.add(feedback)
+                db.session.commit()
+            except exc.IntegrityError:
+                flash('Failed to update feedback!', 'danger')
+                return redirect(url_for('feedback_edit_view', feedback_id=feedback_id))
+            flash('Feedback updated!', 'success')
+            return redirect(url_for('user_detail_view', username=username))
+        
+        return render_template('feedback_edit.html', form=form, submit_button="Update")
+    
+    else:
+        raise Unauthorized('Permission denied. You can only update feedback under your account.')
+
+
+@app.route('/feedback/<int:feedback_id>/delete', methods=['POST'])
+def feedback_delete_view(feedback_id):
+    feedback = Feedback.query.get_or_404(feedback_id)
+    username = feedback.username
+
+    if session.get('user') == username:
+        try:
+            db.session.delete(feedback)
+            db.session.commit()
+        except exc.SQLAlchemyError:
+            flash(f'Failed to remove {feedback.title}', 'danger')
+        flash(f'Feedback removed.', 'success')
+        return redirect(url_for('user_detail_view', username=username))
+    else:
+        flash(f'You do not have permission to delete this feedback.', 'danger')
+        return redirect(url_for('login_view'))

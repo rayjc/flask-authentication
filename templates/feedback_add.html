@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block title %} - New Feedback{% endblock %}
+
+{% block content %}
+<div class="text-center">
+    <h1>Creating new feedback under {{username}}</h1>
+    <p class="lead">Please fill out the details below!</p>
+</div>
+{% include 'form.html' %}
+{% endblock %}

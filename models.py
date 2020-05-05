@@ -61,3 +61,21 @@ class User(db.Model):
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+
+class Feedback(db.Model):
+
+    __tablename__ = "feedbacks"
+
+    id = db.Column(db.Integer, primary_key=True, auto_increment=True, nullable=False)
+    title = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    username = db.Column(db.String, db.ForeignKey('users.username', ondelete='CASCADE'))
+
+    user = db.relationship('User', backref=db.backref('feedbacks', passive_deletes=True))
+
+    def __repr__(self):
+        return (f"<Feedback: id={self.id} "
+                f"title={self.title if len(self.title) < 20 else '...'} "
+                f"content={self.content if len(self.content) < 20 else '...'} "
+                f"username='{self.username}'>")
